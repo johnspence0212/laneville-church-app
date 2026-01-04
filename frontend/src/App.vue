@@ -7,23 +7,8 @@ import Layout from './components/Layout.vue'
 </template>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  line-height: 1.6;
-  color: #1f2937;
-}
-
+/* Global styles handled by Vuetify */
 #app {
-  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
 }
 </style>
