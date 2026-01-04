@@ -1,0 +1,14 @@
+# Node
+node_modules/
+dist/
+
+# PocketBase
+pb_data/
+*.db
+
+# OS
+.DS_Store
+
+# Env
+.env
+.env.*
