@@ -8,6 +8,11 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 export default createVuetify({
   components,
   directives,
+  defaults: {
+    VMain: {
+      class: 'v-main-full-width'
+    }
+  },
   icons: {
     defaultSet: 'mdi',
     aliases,
