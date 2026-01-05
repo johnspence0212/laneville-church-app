@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const drawer = ref(false)
 const pages = ref([])
@@ -15,9 +15,28 @@ async function fetchPages() {
   }
 }
 
-// Get subpages for a given parent section
+// Find the home page (always shown first if it exists)
+const homePage = computed(() => {
+  return pages.value.find(page => page.slug === 'home')
+})
+
+// Get top-level pages (section is null or empty, excluding home)
+const topLevelPages = computed(() => {
+  return pages.value
+    .filter(page => (!page.section || page.section === '') && page.slug !== 'home')
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+})
+
+// Get subpages for a given parent section (sorted by order)
 function getSubpages(parentSection) {
-  return pages.value.filter(page => page.section === parentSection)
+  return pages.value
+    .filter(page => page.section === parentSection)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+}
+
+// Check if a page has children
+function hasChildren(pageSlug) {
+  return getSubpages(pageSlug).length > 0
 }
 
 onMounted(fetchPages)
@@ -39,60 +58,102 @@ onMounted(fetchPages)
 
     <!-- Desktop Navigation -->
     <v-toolbar-items class="d-none d-md-flex">
-      <v-btn variant="text" to="/" class="mx-2">
+      <!-- Home always first -->
+      <v-btn 
+        v-if="homePage" 
+        variant="text" 
+        :to="`/${homePage.slug}`" 
+        class="mx-2"
+      >
         Home
       </v-btn>
       
-      <v-menu open-on-hover>
-        <template v-slot:activator="{ props }">
-          <v-btn variant="text" v-bind="props" class="mx-2">
-            I'm New Here
-            <v-icon end>mdi-chevron-down</v-icon>
-          </v-btn>
-        </template>
-        <v-list>
-          <v-list-item to="/im-new-here">
-            <v-list-item-title>Overview</v-list-item-title>
-          </v-list-item>
-          <v-list-item 
-            v-for="subpage in getSubpages('im-new-here')" 
-            :key="subpage.id"
-            :to="`/${subpage.slug}`"
-          >
-            <v-list-item-title>{{ subpage.title }}</v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+      <!-- Dynamic top-level pages -->
+      <template v-for="page in topLevelPages" :key="page.id">
+        <!-- Page with children - dropdown -->
+        <v-menu v-if="hasChildren(page.slug)" open-on-hover>
+          <template v-slot:activator="{ props }">
+            <v-btn variant="text" v-bind="props" class="mx-2">
+              {{ page.title }}
+              <v-icon end>mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list>
+            <!-- Parent page as first item -->
+            <v-list-item :to="`/${page.slug}`">
+              <v-list-item-title>{{ page.title }}</v-list-item-title>
+            </v-list-item>
+            <!-- Child pages -->
+            <v-list-item 
+              v-for="subpage in getSubpages(page.slug)" 
+              :key="subpage.id"
+              :to="`/${subpage.slug}`"
+            >
+              <v-list-item-title>{{ subpage.title }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+        
+        <!-- Page without children - regular link -->
+        <v-btn 
+          v-else
+          variant="text" 
+          :to="`/${page.slug}`" 
+          class="mx-2"
+        >
+          {{ page.title }}
+        </v-btn>
+      </template>
     </v-toolbar-items>
   </v-app-bar>
 
   <!-- Mobile Navigation Drawer -->
   <v-navigation-drawer v-model="drawer" temporary>
     <v-list>
-      <v-list-item to="/" @click="drawer = false">
+      <!-- Home always first -->
+      <v-list-item 
+        v-if="homePage"
+        :to="`/${homePage.slug}`" 
+        @click="drawer = false"
+      >
         <v-list-item-title>Home</v-list-item-title>
       </v-list-item>
       
-      <v-list-group value="im-new-here">
-        <template v-slot:activator="{ props }">
-          <v-list-item v-bind="props">
-            <v-list-item-title>I'm New Here</v-list-item-title>
+      <!-- Dynamic top-level pages -->
+      <template v-for="page in topLevelPages" :key="page.id">
+        <!-- Page with children - expandable -->
+        <v-list-group v-if="hasChildren(page.slug)" :value="page.slug">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props">
+              <v-list-item-title>{{ page.title }}</v-list-item-title>
+            </v-list-item>
+          </template>
+          
+          <!-- Parent page -->
+          <v-list-item :to="`/${page.slug}`" @click="drawer = false">
+            <v-list-item-title>{{ page.title }}</v-list-item-title>
           </v-list-item>
-        </template>
+          
+          <!-- Children -->
+          <v-list-item 
+            v-for="subpage in getSubpages(page.slug)" 
+            :key="subpage.id"
+            :to="`/${subpage.slug}`"
+            @click="drawer = false"
+          >
+            <v-list-item-title>{{ subpage.title }}</v-list-item-title>
+          </v-list-item>
+        </v-list-group>
         
-        <v-list-item to="/im-new-here" @click="drawer = false">
-          <v-list-item-title>Overview</v-list-item-title>
-        </v-list-item>
-        
+        <!-- Page without children - regular link -->
         <v-list-item 
-          v-for="subpage in getSubpages('im-new-here')" 
-          :key="subpage.id"
-          :to="`/${subpage.slug}`"
+          v-else
+          :to="`/${page.slug}`" 
           @click="drawer = false"
         >
-          <v-list-item-title>{{ subpage.title }}</v-list-item-title>
+          <v-list-item-title>{{ page.title }}</v-list-item-title>
         </v-list-item>
-      </v-list-group>
+      </template>
     </v-list>
   </v-navigation-drawer>
 </template>
